@@ -1255,25 +1255,28 @@ def process_all_caps_sequences_gui(ctx: BookfixContext = None) -> BookfixContext
 
 # --- Automatic Text Processing Functions (Original Bookfix) ---
 def apply_automatic_replacements(ctx: BookfixContext) -> BookfixContext:
-    """Applies all find and replace rules loaded from the data file."""
+    """Applies all find and replace rules loaded from the data file using regex."""
     log_message("Starting automatic replacements.")
     original_text = ctx.text
     replacement_count = 0
-    
-    # Iterate through each old/new pair in the replacements dictionary
+
     for old, new in ctx.replacements.items():
-        # Count replacements for logging
-        before_count = ctx.text.count(old)
-        # Replace all occurrences of 'old' with 'new' in the text
-        ctx.text = ctx.text.replace(old, new)
-        replacement_count += before_count
-    
-    ctx.log_change('automatic_replacements', 
+        try:
+            # Compile and apply as regex
+            pattern = re.compile(old)
+            matches = list(pattern.finditer(ctx.text))
+            ctx.text = pattern.sub(new, ctx.text)
+            replacement_count += len(matches)
+        except re.error as e:
+            log_message(f"Regex error in pattern '{old}': {e}", level="ERROR")
+
+    ctx.log_change('automatic_replacements',
                    f"Applied {len(ctx.replacements)} rules, made {replacement_count} replacements",
                    len(original_text), len(ctx.text))
-    
+
     log_message("Finished automatic replacements.")
     return ctx
+
 
 
 def insert_periods_into_abbreviations(ctx: BookfixContext) -> BookfixContext:
