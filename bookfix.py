@@ -45,7 +45,7 @@ class BookfixContext:
     """Central state object to replace global variables."""
     text: str = ""
     filepath: Optional[str] = None
-    
+
     # Configuration data
     choices: Dict[str, List[str]] = field(default_factory=dict)
     replacements: Dict[str, str] = field(default_factory=dict)
@@ -54,16 +54,16 @@ class BookfixContext:
     lowercase_set: Set[str] = field(default_factory=set)
     roman_ignore_set: Set[str] = field(default_factory=set)
     default_file_directory: Optional[Path] = None
-    
+
     # Processing state
     processing_log: List[Dict[str, Any]] = field(default_factory=list)
     changes_made: List[str] = field(default_factory=list)
-    
+
     # Interactive processing state
     current_word: Optional[str] = None
     current_match: int = 0
     matches: List[Any] = field(default_factory=list)
-    
+
     # All-caps processing state
     current_caps_sequence: Optional[str] = None
     current_caps_span: Optional[tuple] = None
@@ -71,12 +71,12 @@ class BookfixContext:
     cumulative_offset: int = 0
     decided_sequences_text: Set[str] = field(default_factory=set)
     lowercased_original_spans: Set[tuple] = field(default_factory=set)
-    
+
     # Numbered line editing state
     current_numbered_idx: int = 0
     numbered_lines: List[tuple] = field(default_factory=list)
     numbered_edits: Dict[int, str] = field(default_factory=dict)
-    
+
     def log_change(self, step: str, description: str, before_length: int = None, after_length: int = None):
         """Log a processing step change."""
         self.processing_log.append({
@@ -87,12 +87,12 @@ class BookfixContext:
             'timestamp': datetime.datetime.now()
         })
         self.changes_made.append(f"{step}: {description}")
-    
+
     def get_processing_summary(self) -> str:
         """Get a summary of all processing steps performed."""
         if not self.processing_log:
             return "No processing steps completed."
-        
+
         summary = "Processing Summary:\n"
         for i, log_entry in enumerate(self.processing_log, 1):
             summary += f"{i}. {log_entry['step']}: {log_entry['description']}\n"
@@ -170,22 +170,22 @@ def create_processing_pipeline() -> List[ProcessingStep]:
     ]
 
 
-def run_processing_pipeline(ctx: BookfixContext, enabled_steps: Dict[str, bool], 
+def run_processing_pipeline(ctx: BookfixContext, enabled_steps: Dict[str, bool],
                           progress_callback=None) -> BookfixContext:
     """Run the processing pipeline with enabled steps."""
     pipeline = create_processing_pipeline()
-    
+
     for i, step in enumerate(pipeline):
         if enabled_steps.get(step.name, False) and not step.requires_interaction:
             log_message(f"Starting {step.description}...")
             ctx = step.processor(ctx)
-            
+
             # Update GUI with processed text
             update_text_area(ctx)
-            
+
             if progress_callback:
                 progress_callback(i + 1, len(pipeline), step.description)
-    
+
     return ctx
 
 
@@ -287,7 +287,7 @@ def apply_upper_to_lower(ctx: BookfixContext, upper_to_lower: Dict[str, str]) ->
     """
     original_text = ctx.text
     replacements_made = 0
-    
+
     for up, low in upper_to_lower.items():
         # Count occurrences before replacement
         pattern = re.compile(rf'\b{re.escape(up)}\b')
@@ -295,11 +295,11 @@ def apply_upper_to_lower(ctx: BookfixContext, upper_to_lower: Dict[str, str]) ->
         replacements_made += len(matches)
         # \b ensures we replace whole words only
         ctx.text = pattern.sub(low, ctx.text)
-    
-    ctx.log_change('apply_upper_to_lower', 
+
+    ctx.log_change('apply_upper_to_lower',
                    f"Applied {len(upper_to_lower)} uppercase-to-lowercase rules, made {replacements_made} replacements",
                    len(original_text), len(ctx.text))
-    
+
     return ctx
 
 
@@ -361,10 +361,10 @@ def load_data_file(ctx: BookfixContext = None) -> BookfixContext:
     Corrected parsing logic to stop collecting content only at the *next* section marker.
     """
     global default_file_directory  # Keep this global for GUI compatibility
-    
+
     if ctx is None:
         ctx = BookfixContext()
-    
+
     # Reset all data
     ctx.choices = {}
     ctx.replacements = {}
@@ -765,12 +765,12 @@ def process_choices(ctx: BookfixContext = None) -> BookfixContext:
     Includes logging to matches.txt.
     """
     global text, current_word, current_match, matches, progress_bar, progress_label, choice_var
-    
+
     # Use global context if none provided (for backward compatibility)
     if ctx is None:
         global global_ctx
         ctx = global_ctx
-    
+
     # Clearing matches.txt is now handled in start_processing_button_command
 
     # Get the total number of unique words requiring choices to track progress
@@ -882,9 +882,9 @@ def process_choices(ctx: BookfixContext = None) -> BookfixContext:
     # Update the context with the final changes made
     ctx.text = text_area.get("1.0", tk.END).strip() # Ensure final text is synced
     text = ctx.text  # Keep global text in sync for GUI compatibility
-    
+
     # Log the completion
-    ctx.log_change('interactive_choices', 
+    ctx.log_change('interactive_choices',
                    f"Processed {processed_words} words with interactive choices",
                    None, None)
 
@@ -924,7 +924,7 @@ def handle_choice(choice, ctx: BookfixContext = None):
     Includes logging to matches.txt.
     """
     global text_area, current_match, matches, choice_var, text, current_word
-    
+
     # Use global context if none provided (for backward compatibility)
     if ctx is None:
         global global_ctx
@@ -1034,7 +1034,7 @@ def handle_caps_choice(choice, ctx: BookfixContext = None):
     """
     global text, choice_var
     global current_caps_sequence, current_caps_span, text_area
-    
+
     # Use global context if none provided (for backward compatibility)
     if ctx is None:
         global global_ctx
@@ -1066,7 +1066,7 @@ def handle_caps_choice(choice, ctx: BookfixContext = None):
         if original_span:
             ctx.lowercased_original_spans.add(original_span)
         ctx.decided_sequences_text.add(seq)
-        
+
         # Bulk-lower all remaining instances of this sequence
         bulk_pattern = re.compile(rf'\b{re.escape(seq)}\b')
         ctx.text = bulk_pattern.sub(seq.lower(), ctx.text)
@@ -1127,7 +1127,7 @@ def process_all_caps_sequences_gui(ctx: BookfixContext = None) -> BookfixContext
     """
     global choice_var, current_caps_sequence, current_caps_span, text_area, status_label, choice_frame, \
            decided_sequences_text, lowercased_original_spans
-    
+
     # Use global context if none provided (for backward compatibility)
     if ctx is None:
         global global_ctx
@@ -1236,16 +1236,16 @@ def process_all_caps_sequences_gui(ctx: BookfixContext = None) -> BookfixContext
         widget.destroy()
     status_label.config(text="Finished all-caps processing.")
     root.update_idletasks()
-    
+
     # Sync back to global text for GUI compatibility
     global text
     text = ctx.text
-    
+
     # Log the completion
-    ctx.log_change('all_caps_processing', 
+    ctx.log_change('all_caps_processing',
                    f"Processed all-caps sequences interactively",
                    None, None)
-    
+
     log_message("=== Exiting process_all_caps_sequences_gui ===", level="DEBUG")
     return ctx
 
@@ -1284,7 +1284,7 @@ def insert_periods_into_abbreviations(ctx: BookfixContext) -> BookfixContext:
     log_message("Starting inserting periods into abbreviations.")
     original_text = ctx.text
     replacements_made = 0
-    
+
     # Iterate through each abbreviation that needs periods
     for abbr in ctx.periods:
         # Create a regex pattern to find the whole word abbreviation
@@ -1296,11 +1296,11 @@ def insert_periods_into_abbreviations(ctx: BookfixContext) -> BookfixContext:
         replacements_made += len(matches)
         # Use re.sub to replace all matches of the pattern with the replacement string
         ctx.text = re.sub(pattern, replacement, ctx.text)
-    
-    ctx.log_change('insert_periods', 
+
+    ctx.log_change('insert_periods',
                    f"Processed {len(ctx.periods)} abbreviations, made {replacements_made} insertions",
                    len(original_text), len(ctx.text))
-    
+
     log_message("Finished inserting periods.")
     return ctx
 
@@ -1310,11 +1310,11 @@ def convert_to_lowercase(ctx: BookfixContext) -> BookfixContext:
     log_message("Starting converting to lowercase.")
     original_text = ctx.text
     ctx.text = ctx.text.lower()
-    
-    ctx.log_change('convert_lowercase', 
+
+    ctx.log_change('convert_lowercase',
                    "Converted entire text to lowercase",
                    len(original_text), len(ctx.text))
-    
+
     log_message("Finished converting to lowercase.")
     return ctx
 
@@ -1333,7 +1333,7 @@ def convert_roman_numerals(ctx: BookfixContext) -> BookfixContext:
         open('roman_conversions.log', 'w', encoding='utf-8').close()
     except Exception as e:
         log_message(f"Error clearing roman_conversions.log: {e}", level="ERROR")
-    
+
     # Use raw string with single backslashes for word boundaries
     # Less restrictive: avoid roman numerals bracketed by symbols (like R&D, I.D., Ph.D., etc.)
     # Allow conversion of cases like "tallos IV" while protecting abbreviations
@@ -1343,40 +1343,40 @@ def convert_roman_numerals(ctx: BookfixContext) -> BookfixContext:
         nonlocal conversions_made
         # For the simpler pattern, the roman numeral is the entire match
         token = m.group(1) if m.lastindex and m.lastindex >= 1 else m.group(0)
-        
+
         # Check if this roman numeral should be ignored
         if token.upper() in ctx.roman_ignore_set:
             log_message(f"Skipping roman numeral '{token}' (found in roman_ignore_set)", level="DEBUG")
             return token
-        
+
         val = roman_to_arabic(token)
-        
+
         if isinstance(val, int) and val > 0:
             # Log the conversion with context
             start, end = m.start(), m.end()
             context_start = max(0, start - 10)
             context_end = min(len(ctx.text), end + 10)
             context = ctx.text[context_start:context_end]
-            
+
             try:
                 with open('roman_conversions.log', 'a', encoding='utf-8') as conv_log:
                     conv_log.write(f"Converted '{token}' to '{val}' in context: ...{context}...\n")
             except Exception as e:
                 log_message(f"Error writing to roman_conversions.log: {e}", level="ERROR")
-            
+
             conversions_made += 1
             return str(val)
-        
+
         # Leave unchanged if not a valid roman numeral
         return token
 
     # Perform the substitution on the text
     ctx.text = re.sub(roman_pattern, _replace, ctx.text)
-    
-    ctx.log_change('roman_numerals', 
+
+    ctx.log_change('roman_numerals',
                    f"Converted {conversions_made} Roman numerals to Arabic numbers",
                    len(original_text), len(ctx.text))
-    
+
     log_message("Finished converting Roman numerals.", level="INFO")
     return ctx
 
@@ -1471,7 +1471,7 @@ def remove_pagination(ctx: BookfixContext) -> BookfixContext:
     except Exception as e:
         log_message(f"Error saving pagination debug log: {e}", level="ERROR")
 
-    ctx.log_change('remove_pagination', 
+    ctx.log_change('remove_pagination',
                    f"Removed {len(pagination_log)} pagination elements",
                    len(original_text), len(ctx.text))
 
@@ -1485,21 +1485,21 @@ def remove_blank_lines(ctx: BookfixContext) -> BookfixContext:
     log_message("Removing blank lines...")
     original_text = ctx.text
     original_line_count = len(original_text.splitlines())
-    
+
     # Split the text into lines
     lines = ctx.text.splitlines()
     # Filter out lines that are empty or contain only whitespace
     non_blank_lines = [line for line in lines if line.strip()]
     # Join the remaining lines back together with newline characters
     ctx.text = "\n".join(non_blank_lines)
-    
+
     final_line_count = len(non_blank_lines)
     removed_lines = original_line_count - final_line_count
-    
-    ctx.log_change('remove_blank_lines', 
+
+    ctx.log_change('remove_blank_lines',
                    f"Removed {removed_lines} blank lines ({original_line_count} → {final_line_count} lines)",
                    len(original_text), len(ctx.text))
-    
+
     log_message("Blank line removal complete.")
     return ctx
 
@@ -1619,7 +1619,7 @@ def run_processing():
         lowercase_set=lowercase_set,
         roman_ignore_set=roman_ignore_set
     )
-    
+
     # Initialize interactive processing state
     ctx.decided_sequences_text = set()
     ctx.lowercased_original_spans = set()
@@ -1640,23 +1640,23 @@ def run_processing():
         'all_caps_processing': process_all_caps_var.get(),
         'numbered_line_edit': enable_numbered_line_edit_var.get()
     }
-    
+
     # Progress callback to update GUI
     def progress_callback(current, total, description):
         update_status_label(f"Step {current}/{total}: {description}")
         root.update_idletasks()
-    
+
     # Run non-interactive processing pipeline
     log_message("Starting non-interactive processing pipeline.")
     ctx = run_processing_pipeline(ctx, enabled_steps, progress_callback)
-    
+
     # Update global text and GUI after pipeline
     text = ctx.text
     update_text_area()
     log_message("Non-interactive processing pipeline completed.")
 
     # Interactive Processing Steps (handled separately in logical order)
-    
+
     # 1. Interactive Choices - After automatic processing, let user make word choices
     if enabled_steps['interactive_choices']:
         log_message("Checkbox 'Interactive Choices' is checked. Executing process_choices().")
@@ -1708,11 +1708,11 @@ def run_processing():
     # Update global text with final processed result
     text = ctx.text
     update_text_area()
-    
+
     # Display processing summary
     log_message("Processing Summary:")
     log_message(ctx.get_processing_summary())
-    
+
     # Update the GUI display and status
     log_message("All processing steps completed.")
     update_status_label("Processing complete.")
@@ -1782,7 +1782,7 @@ def update_text_area(ctx: BookfixContext = None):
     global text, text_area # Need global text_area here
     log_message("Updating text area with current text variable content.")
     text_area.delete("1.0", tk.END) # Clear existing content
-    
+
     # Use context text if provided, otherwise use global text
     display_text = ctx.text if ctx else text
     text_area.insert("1.0", display_text) # Insert the current text
@@ -1856,7 +1856,7 @@ if __name__ == "__main__":
 
     # Load data from .data.txt first, which includes the default directory
     global_ctx = load_data_file()
-    
+
     # Update global variables with loaded data
     choices = global_ctx.choices
     replacements = global_ctx.replacements
@@ -1864,7 +1864,7 @@ if __name__ == "__main__":
     ignore_set = global_ctx.ignore_set
     lowercase_set = global_ctx.lowercase_set
     roman_ignore_set = global_ctx.roman_ignore_set
-    
+
     log_message(f"DEBUG: Updated global ignore_set from loaded context: {ignore_set}", level="DEBUG")
 
     # Check if a default directory was loaded and is valid
