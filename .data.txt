@@ -1,24 +1,19 @@
 # this is the default dir to start the program in. If blank the program will ask you to set it and provice a broswer window to select the direcotry. once set you are done.
 
 # DEFAULT_FILE_DIR
-
-
-
-
-
-
-
-# this is the automatic replace.  the given word is simply replaced with the alternative to correct pronouciation.  Depending on your tts engine you might
-# need to adjust these. Also, some of these are book/genre specific. And some are specifc to MY ear so they may need to be adjusted for your region or dialect.
-
+/home/danno/Calibre Library
 # REPLACE
+KM - kilometers
+pique -> peek
+any minute -> any minit
+the wind -> the wynd
 lead to -> leed to
 lead at -> leed at
 to lead -> to leed
 lead the -> leed the
 BBQ -> barbihq
 #close to -> klose to
-#close-quarter -> klose-quarter
+#close-quarter -> klose-quarterlead
 #close quarter -> klose quarter
 #close enough -> klose enough
 #as close -> as klose
@@ -234,8 +229,8 @@ tear gas -> teer gas
 capitalist -> kapitalist
 capitalism -> kapitalism
 ’ -> '
- Lt. -> luetenant
- lt. -> luetenant
+Lt. -> luetenant
+lt. -> luetenant
 #dove at -> dove at
 #dove toward -> dove toward
 to read -> to reed
@@ -244,6 +239,13 @@ had read -> had red
 … ->
 to live -> to liv
 xeno -> zeeno
+just a minute -> just a minit
+in a minute -> in a minit
+by the minute -> by the minit
+this minute -> the minit
+any minute -> any minit
+for a minute -> for a minit
+solid object -> solid objekt
 
 
 # This is for heteronyms - words that are spelled one way but can be pronouced differently depending on meaning.
@@ -253,6 +255,7 @@ xeno -> zeeno
 # CONtest and contest exactly the same. If convert to lowercase is dissabled then it shouldn't be an issue.
 
 # CHOICE
+Jesus -> Jesus ; heysous
 # morale -> morAL ; more-al
 lead -> leed ; led
 tear -> teer ; tair
