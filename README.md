@@ -1,4 +1,4 @@
-# Bookfix - Ebook Text Processing Tool
+# Bookfix - Ebook Text Processing Tool v2.0
 
 A modular PyQt5-based application for interactive ebook text processing and cleanup. Bookfix provides automated text processing with interactive decision-making for ambiguous cases, specifically designed for preparing ebooks for Text-to-Speech (TTS) systems.
 
