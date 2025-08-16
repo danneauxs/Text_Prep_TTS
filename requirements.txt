@@ -1,0 +1,3 @@
+PyQt5
+# nltk and g2p-en removed - phonetic analysis was unreliable
+# See phoneticreplacement.txt for details
