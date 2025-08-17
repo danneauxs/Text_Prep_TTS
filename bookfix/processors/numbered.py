@@ -24,6 +24,7 @@ class NumberedLineProcessor:
         self.numbered_lines: List[Tuple[int, str, List[Tuple[int, int]]]] = []
         self.current_numbered_idx: int = 0
         self.numbered_edits: Dict[int, str] = {}
+        self.session_ignored_numbers: set = set()  # Numbers to ignore for this session
         
         # GUI callbacks - set by the GUI framework
         self.line_display_callback: Optional[Callable[[int, str, List[Tuple[int, int]]], None]] = None
@@ -33,7 +34,7 @@ class NumberedLineProcessor:
     
     def find_numbered_lines(self, text: str) -> List[Tuple[int, str, List[Tuple[int, int]]]]:
         """
-        Find lines containing 3+ digit numbers.
+        Find lines containing 3+ digit numbers, excluding ignored numbers.
         
         Args:
             text: Text to search
@@ -47,7 +48,13 @@ class NumberedLineProcessor:
         number_pattern = re.compile(r'\d{3,}')
         
         for idx, line in enumerate(lines):
-            spans = [m.span() for m in number_pattern.finditer(line)]
+            spans = []
+            for match in number_pattern.finditer(line):
+                number_text = match.group()
+                # Only include if not in ignored set
+                if number_text not in self.session_ignored_numbers:
+                    spans.append(match.span())
+            
             if spans:
                 numbered_lines.append((idx, line, spans))
         
@@ -63,6 +70,8 @@ class NumberedLineProcessor:
         Returns:
             True if lines found and editing started, False if no lines found
         """
+        # Reset session data
+        self.session_ignored_numbers = set()
         self.numbered_lines = self.find_numbered_lines(ctx.text)
         self.current_numbered_idx = 0
         self.numbered_edits = {}
@@ -121,6 +130,47 @@ class NumberedLineProcessor:
             return True
         else:
             return self._finish_editing()
+    
+    def ignore_current_numbers(self, ctx: 'BookfixContext') -> bool:
+        """
+        Ignore all numbers found in the current line for this session.
+        
+        Args:
+            ctx: BookfixContext containing text to process
+            
+        Returns:
+            True if more lines to edit, False if finished
+        """
+        if self.current_numbered_idx < len(self.numbered_lines):
+            lineno, line, spans = self.numbered_lines[self.current_numbered_idx]
+            
+            # Extract numbers from the current line and add to ignore set
+            number_pattern = re.compile(r'\d{3,}')
+            for match in number_pattern.finditer(line):
+                number_text = match.group()
+                self.session_ignored_numbers.add(number_text)
+                if self.status_callback:
+                    self.status_callback(f"Added '{number_text}' to ignore list for this session")
+            
+            # Refresh the numbered lines list to exclude newly ignored numbers
+            original_idx = self.current_numbered_idx
+            self.numbered_lines = self.find_numbered_lines(ctx.text)
+            
+            # Adjust current index - find next valid line at or after current position
+            while (original_idx < len(self.numbered_lines) and 
+                   self.numbered_lines[original_idx][0] <= lineno):
+                original_idx += 1
+            
+            self.current_numbered_idx = original_idx
+            
+            # If we have more lines, show the next one
+            if self.current_numbered_idx < len(self.numbered_lines):
+                self._show_current_line()
+                return True
+            else:
+                return self._finish_editing()
+        
+        return self.go_next()
     
     def go_previous(self) -> bool:
         """

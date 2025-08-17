@@ -701,8 +701,13 @@ class BookfixMainWindow(QMainWindow):
         skip_button = QPushButton("Skip")
         skip_button.clicked.connect(self.handle_numbered_skip)
         
+        ignore_button = QPushButton("Ignore")
+        ignore_button.clicked.connect(self.handle_numbered_ignore)
+        ignore_button.setToolTip("Ignore all instances of numbers in this line for this session")
+        
         button_layout.addWidget(apply_button)
         button_layout.addWidget(skip_button)
+        button_layout.addWidget(ignore_button)
         
         layout.addLayout(button_layout)
     
@@ -733,6 +738,13 @@ class BookfixMainWindow(QMainWindow):
     def handle_numbered_skip(self):
         """Handle skip button for numbered line editing."""
         if not self.numbered_processor.go_next():
+            # Editing complete
+            self.numbered_processor.apply_edits(self.ctx)
+            self.finish_current_interactive_step()
+    
+    def handle_numbered_ignore(self):
+        """Handle ignore button for numbered line editing."""
+        if not self.numbered_processor.ignore_current_numbers(self.ctx):
             # Editing complete
             self.numbered_processor.apply_edits(self.ctx)
             self.finish_current_interactive_step()
