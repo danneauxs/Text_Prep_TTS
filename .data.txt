@@ -249,8 +249,11 @@ solid object -> solid objekt
 tow -> toe
 servos -> servoze
 coordinate -> co-ordinayte
+FUBAR -> foobar
 fubar -> foobar
 bbq -> barbee-Q
+minute amount -> mynoot amount
+
 
 
 # This is for heteronyms - words that are spelled one way but can be pronouced differently depending on meaning.

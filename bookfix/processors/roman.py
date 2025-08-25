@@ -46,16 +46,32 @@ def convert_roman_numerals(ctx: 'BookfixContext') -> 'BookfixContext':
     except Exception as e:
         log_message(f"Error clearing roman_conversions.log: {e}", level="ERROR")
 
-    # Roman numeral pattern that requires proper spacing and blocks apostrophes/hyphens  
-    # Blocks: all apostrophe-like chars, hyphens, letters, & symbol, periods preceded by single letter
-    # Allows: "Tallos IV", "Chapter V.", "Part IV!" but blocks "D'jango", "D`lralu", "C.D.", "X-ray", "R&D"
-    roman_pattern = r"(?<![A-Za-z'`´''&\-.])\b([VXLCDM]|[MDCLXVI]{2,})\b(?![A-Za-z'`´''&\-]|\.(?=\S))"
+    # Roman numeral pattern from original working version
+    # Uses lookbehind/ahead to avoid letters and symbols, preventing matches inside words
+    roman_pattern = r"(?<![A-Za-z&\-+:;/\\'`´''])\b([VXLCDM]|[MDCLXVI]{2,})\b(?![A-Za-z&\-+:;/\\]|['`´''][a-rtuvwxyzA-RTUVWXYZ])"
 
     def _replace(m):
         nonlocal conversions_made
-        # For the simpler pattern, the roman numeral is the entire match
         token = m.group(1) if m.lastindex and m.lastindex >= 1 else m.group(0)
-
+        start_pos = m.start()
+        end_pos = m.end()
+        
+        # Additional context checks for edge cases
+        before_char = ctx.text[start_pos - 1] if start_pos > 0 else ' '
+        after_char = ctx.text[end_pos] if end_pos < len(ctx.text) else ' '
+        
+        # Skip if it's like "X.V" (version number) - check both before and after period
+        if (after_char == '.' and end_pos + 1 < len(ctx.text) and ctx.text[end_pos + 1] in 'VXLCDMI') or \
+           (before_char == '.' and start_pos > 1 and ctx.text[start_pos - 2] in 'VXLCDMI'):
+            return token
+            
+        # Skip common English words that happen to be Roman numerals
+        if token.upper() in ['MIX']:  # Add other problematic words as needed
+            # Only convert if it looks like a chapter/section context
+            context_before = ctx.text[max(0, start_pos-20):start_pos].lower()
+            if not any(word in context_before for word in ['chapter', 'section', 'part', 'volume', 'book']):
+                return token
+        
         # Check if this roman numeral should be ignored
         if token.upper() in ctx.roman_ignore_set:
             log_message(f"Skipping roman numeral '{token}' (found in roman_ignore_set)", level="DEBUG")
